@@ -6,6 +6,7 @@ import HasChildLock from './has_childlock';
 import HasDoor from './has_door';
 import HasEvents from './has_events';
 import HasModes from './has_modes';
+import HasThermostat from './has_thermostat';
 
 // Modes supported by some or all cooling appliances
 const COOLING_MODES = {
@@ -29,6 +30,13 @@ const COOLING_MODES = {
         'Sabbath Mode'
 };
 
+const THERMOSTATS = {
+    'Refrigeration.FridgeFreezer.Setting.SetpointTemperatureRefrigerator':
+        'Fridge Thermostat',
+    'Refrigeration.FridgeFreezer.Setting.SetpointTemperatureFreezer':
+        'Freezer Thermostat'
+};
+
 // A Homebridge accessory for a Home Connect freezer
 export class ApplianceFreezer
     extends ApplianceGeneric {
@@ -44,6 +52,7 @@ export class ApplianceFreezer
                 'Freezer Temperature Alarm'
         });
         this.mixin(HasModes, COOLING_MODES, 'cooling');
+        this.mixin(HasThermostat, THERMOSTATS);
         this.mixin(HasChildLock);
     }
 }
@@ -65,6 +74,7 @@ export class ApplianceFridgeFreezer
                 'Freezer Temperature Alarm'
         });
         this.mixin(HasModes, COOLING_MODES, 'cooling');
+        this.mixin(HasThermostat, THERMOSTATS);
         this.mixin(HasChildLock);
     }
 }
@@ -82,6 +92,7 @@ export class ApplianceRefrigerator
                 'Refrigerator Door Alarm'
         });
         this.mixin(HasModes, COOLING_MODES, 'cooling');
+        this.mixin(HasThermostat, THERMOSTATS);
         this.mixin(HasChildLock);
     }
 }
@@ -95,6 +106,7 @@ export class ApplianceWineCooler
         // Customise the appliance as a wine cooler
         this.mixin(HasDoor);
         this.mixin(HasModes, COOLING_MODES, 'cooling');
+        this.mixin(HasThermostat, THERMOSTATS);
         this.mixin(HasChildLock);
     }
 }
