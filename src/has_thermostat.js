@@ -3,7 +3,7 @@
 
 let Service, Characteristic;
 
-// Add mode switches to an accessory
+// Add Thermostats to an accessory
 module.exports = {
     name: 'HasThermostat',
 
@@ -42,17 +42,41 @@ module.exports = {
         service.addOptionalCharacteristic(Characteristic.ConfiguredName);
         service.setCharacteristic(Characteristic.ConfiguredName, name);
 
+        // Get the current temp units and convert the limits if necessary
+        let therm_min = 0;
+        let therm_max = 0;
         if (thermSettings.unit === '°C') {
-            this.log('Setting units to C');
+            this.debug('Setting units to C');
             this.tempUnit = Characteristic.TemperatureDisplayUnits.CELSIUS;
+            therm_min = thermSettings.constraints.min;
+            therm_max = thermSettings.constraints.max;
         } else {
-            this.log('Setting units to F');
+            this.debug('Setting units to F');
             this.tempUnit = Characteristic.TemperatureDisplayUnits.FAHRENHEIT;
+            therm_min = (thermSettings.constraints.min - 32) * 5 / 9;
+            therm_max = (thermSettings.constraints.max - 32) * 5 / 9;
         }
+
+        // Set the initial temps
+        let temp = thermSettings.value;
+        if (this.tempUnit === Characteristic.TemperatureDisplayUnits.FAHRENHEIT) {
+            temp = (temp - 32) * 5 / 9;
+        }
+        service.updateCharacteristic(Characteristic.CurrentTemperature, temp);
+        service.getCharacteristic(Characteristic.TargetTemperature).setProps({
+            minValue: therm_min,
+            maxValue: therm_max
+        });
+        service.updateCharacteristic(Characteristic.TargetTemperature, temp);
+
         this.device.on(key, item => {
             this.log('Current Temp ' + item.value);
-            service.updateCharacteristic(Characteristic.CurrentTemperature, item.value);
-            service.updateCharacteristic(Characteristic.TargetTemperature, item.value);
+            let temp = item.value;
+            if (this.tempUnit === Characteristic.TemperatureDisplayUnits.FAHRENHEIT) {
+                temp = (temp - 32) * 5 / 9;
+            }
+            service.updateCharacteristic(Characteristic.CurrentTemperature, temp);
+            service.updateCharacteristic(Characteristic.TargetTemperature, temp);
         });
 
         // cool only
@@ -66,11 +90,17 @@ module.exports = {
         service.getCharacteristic(Characteristic.TemperatureDisplayUnits, Characteristic.TemperatureDisplayUnits.CELSIUS);
 
         service.getCharacteristic(Characteristic.TargetTemperature).setProps({
-            minValue: thermSettings.constraints.min,
-            maxValue: thermSettings.constraints.max
+            minValue: therm_min,
+            maxValue: therm_max
         }).on('set', this.callbackify(async value => {
-            this.log('SET ' + name + ' ' + (value));
-            await this.device.setSetting(key, value);
+            this.debug('SET ' + name + ' ' + (value));
+            let temp = value;
+            if (this.tempUnit === Characteristic.TemperatureDisplayUnits.FAHRENHEIT) {
+                temp = (value * 9 / 5) + 32;
+            }
+            temp = Math.round(temp);
+            this.log('SET ' + name + ' ' + (temp));
+            await this.device.setSetting(key, temp);
         }));
 
         service.getCharacteristic(Characteristic.TemperatureDisplayUnits).setProps({
